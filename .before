@@ -1,0 +1,8 @@
+#!/bin/bash
+set -euo pipefail
+
+source .env
+
+kubectl apply -f k8s/namespace.yaml
+kubectl -n ${NAMESPACE} create secret generic gitlab-runner-token --from-literal=runner-registration-token="" --from-literal=runner-token="${GITLAB_RUNNER_TOKEN}" --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n ${NAMESPACE} create secret docker-registry docker-io --docker-server=https://index.docker.io/v1/ --docker-username=${DOCKER_HUB_USER} --docker-password=${DOCKER_HUB_PASSWORD} --docker-email="${DOCKER_HUB_EMAIL}" --dry-run=client -o yaml | kubectl apply -f -

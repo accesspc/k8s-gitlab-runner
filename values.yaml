@@ -1,0 +1,58 @@
+---
+gitlabUrl: https://gitlab.com
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 15
+
+readinessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 15
+
+metrics:
+  enabled: true
+
+rbac:
+  create: true
+
+runners:
+  config: |
+    [[runners]]
+    request_concurrency = 3
+      [runners.kubernetes]
+        image = "quay.io/podman/stable:latest"
+        namespace = "{{ default .Release.Namespace .Values.runners.jobNamespace }}"
+        privileged = true
+        [runners.kubernetes.pod_security_context]
+          run_as_user = 0
+        [[runners.kubernetes.volumes.empty_dir]]
+          name = "containers-storage"
+          mount_path = "/var/lib/containers"
+          size_limit = "30Gi"
+        [[runners.kubernetes.volumes.secret]]
+          name = "docker-io"
+          mount_path = "/root/.docker"
+          read_only = true
+          [runners.kubernetes.volumes.secret.items]
+            ".dockerconfigjson" = "config.json"
+
+  secret: gitlab-runner-token
+
+secrets:
+  - name: docker-io
+
+serviceAccount:
+  create: true
+
+  imagePullSecrets:
+    - docker-io
+
+unregisterRunners: true
+
+volumeMounts:
+  - name: docker-cache
+    mountPath: /cache
+
+volumes:
+  - name: docker-cache
+    emptyDir: {}
